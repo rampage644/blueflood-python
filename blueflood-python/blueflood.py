@@ -17,6 +17,8 @@ def _get_metrics_query_url(host, port, scheme, tenantId,
 
 
 # TODO add retrieve method
+# TODO tenant id as parameter
+# TODO replace urllib2 with requests(?)
 class BluefloodEndpoint():
 
     def __init__(self, host='localhost', port='19000'):
