@@ -51,5 +51,4 @@ class BluefloodEndpoint():
         r = urllib2.urlopen(_get_metrics_query_url(self.host, self.retrieve_port, 'http', self.tenant,
                                                    metric_name, start, to, points))
         response = r.read()
-
-    def 
+        return json.loads(response)
