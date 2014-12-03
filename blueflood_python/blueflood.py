@@ -41,17 +41,15 @@ class BluefloodEndpoint():
             "metricValue": v,
             "metricName": metric_name
         } for t,v in zip(time, value)]
-        print (_get_metrics_url(self.host, self.ingest_port, 'http', 'tenant-id'))
+        # print (_get_metrics_url(self.host, self.ingest_port, 'http', 'tenant-id'))
         # print (json.dumps(data))
         r = urllib2.urlopen(_get_metrics_url(self.host, self.ingest_port, 'http', self.tenant),
                             data=json.dumps(data))
         return r.read()
 
     def retrieve(self, metric_name, start, to, points):
-        print (_get_metrics_query_url(self.host, self.retrieve_port, 'http', self.tenant,
-                                                   metric_name, start, to, points))
         r = urllib2.urlopen(_get_metrics_query_url(self.host, self.retrieve_port, 'http', self.tenant,
                                                    metric_name, start, to, points))
         response = r.read()
-        print (response)
-        return json.loads(response)
+
+    def 
