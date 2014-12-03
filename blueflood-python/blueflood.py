@@ -17,13 +17,12 @@ def _get_metrics_query_url(host, port, scheme, tenantId,
 
 
 # TODO add retrieve method
-# TODO tenant id as parameter
-# TODO replace urllib2 with requests(?)
 class BluefloodEndpoint():
 
-    def __init__(self, host='localhost', port='19000'):
+    def __init__(self, host='localhost', port='19000', tenant='tenant-id'):
         self.host = host
         self.port = port
+        self.tenant = tenant
 
     def ingest(self, metric_name, time, value, ttl):
         if not isinstance(time, list):
@@ -42,6 +41,6 @@ class BluefloodEndpoint():
         } for t,v in zip(time, value)]
         # print (_get_metrics_url(self.host, self.port, 'http', 'tenant-id'))
         # print (json.dumps(data))
-        r = urllib2.urlopen(_get_metrics_url(self.host, self.port, 'http', 'tenant-id'),
+        r = urllib2.urlopen(_get_metrics_url(self.host, self.port, 'http', self.tenant),
                             data=json.dumps(data))
         return r.read()
