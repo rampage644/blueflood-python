@@ -19,15 +19,14 @@ def testListIngest(setup):
     name = 'example.metric.one'
     ttl = 10
     assert endpoint.ingest(name,
-                           [1376509892612, 1376509892613, 1376509892614], [50, 51, 52], ttl) == ''
+                           [1376509892612, 1376509892613, 1376509892614], 
+                           [50, 51, 52], 
+                           ttl) == ''
     with pytest.raises(Exception):
-        endpoint.ingest(
-            name, [1376509892612, 1376509892613, 1376509892614], 50, ttl)
-
-def testWrongEndpointConfig(setup):
-    self.endpoint.ingest_port = '19001'
-    with pytest.raises(HTTPError):
-        assert self.endpoint.ingest(name, 1376509892612, 50, ttl) == ''
+        endpoint.ingest(name, 
+                        [1376509892612, 1376509892613, 1376509892614], 
+                        50, 
+                        ttl)
 
 def testRetrieve(setup):
     endpoint = setup
