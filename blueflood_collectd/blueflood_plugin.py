@@ -5,22 +5,10 @@ import time
 
 cfg = {} # has to be global due to `config` function
 
-def write(vl, data=None):
-    # return 0
-    print vl
-    # print vl.plugin_instance, vl.type_instance
-    # endpoint.ingest('{}.{}'.format(vl.plugin, vl.type), [int(vl.time)] * len(vl.values), list(vl.values), 60 * 60 * 24)
-
 def config(config):
     global cfg
     for child in config.children:
         cfg[child.key] = child.values[0]
-    return
-
-
-collectd.register_write(write)
-collectd.register_config(config)
-
 
 def parse_types_file(path):
     output = {}
@@ -36,7 +24,6 @@ def parse_types_file(path):
             type, values = fields[0], ''.join(fields[1:]).split(',')
             output[type] = [tuple(v.split(':')) for v in values]
     return output
-
 
 
 def flush(data):
@@ -68,8 +55,6 @@ def flush(data):
 
 
 def queue(name, t, v, data):
-    # Updating shared data structures
-    #
     with data['lock']:
         series = data['metrics'].get(name, [])
         series.append((t, v))
@@ -117,24 +102,18 @@ def write(v, data=None):
 
         queue('.'.join(name), v.time, v.values[index], data)
 
-# def librato_init():
-#     import threading
+def init():
+    import threading
+    data = {
+        'lock': threading.Lock(),
+        'conf': cfg,
+        'last_flush_time': time.time(),
+        'types': parse_types_file(cfg.get('TypesDB', '/usr/share/collectd/types.db')),
+        'metrics': {}
+    }
 
-#     try:
-#         librato_parse_types_file(config['types_db'])
-#     except:
-#         msg = '%s: ERROR: Unable to open TypesDB file: %s.' % \
-#               (plugin_name, config['types_db'])
-#         raise Exception(msg)
+    # can't register write earlier cause of threading import constraints
+    collectd.register_write(write, data)
 
-#     d = {
-#         'lock' : threading.Lock(),
-#         'last_flush_time' : get_time(),
-#         'gauges' : [],
-#         'counters' : []
-#         }
-
-#     collectd.register_write(librato_write, data = d)
-
-# collectd.register_config(librato_config)
-# collectd.register_init(librato_init)
+collectd.register_init(init)
+collectd.register_config(config)

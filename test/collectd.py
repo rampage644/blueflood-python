@@ -24,8 +24,11 @@ class Values(object):
         self.interval = interval
 
 
-def register_write(func):
+def register_write(func, data):
     pass
 
 def register_config(func):
+    pass
+
+def register_init(func):
     pass

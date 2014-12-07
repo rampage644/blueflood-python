@@ -88,3 +88,16 @@ def test_queue(flush):
         'localhost.load.load.shortterm': values + [(0, 0)]
     }
     flush.assert_called_once_with(data)
+
+@mock.patch('blueflood_collectd.blueflood_plugin.collectd.register_write')
+def test_init(register_write):
+    # testing all needed dict keys
+    path = os.path.join(os.path.dirname(__file__), 'types.db')
+    blueflood_collectd.blueflood_plugin.cfg = {'TypesDB': path}
+    blueflood_collectd.blueflood_plugin.init()
+    data = register_write.call_args[0][1]
+    assert 'lock' in data
+    assert 'conf' in data and isinstance(data['conf'], dict)
+    assert 'last_flush_time' and data['last_flush_time'] >= 0
+    assert 'metrics' in data and isinstance(data['metrics'], dict)
+    assert 'types' in data and isinstance(data['types'], dict)
