@@ -37,7 +37,7 @@ def flush(data, conf):
     for metric, series in data.iteritems():
         time_s = [pt[0] for pt in series]
         values_s = [pt[1] for pt in series]
-        endpoint.ingest(metric, time_s, values_s)
+        endpoint.ingest(metric, time_s, values_s, conf.get('TTL', 60 * 60 * 24))
 
 def queue(name, t, v, data):
     with data['lock']:
