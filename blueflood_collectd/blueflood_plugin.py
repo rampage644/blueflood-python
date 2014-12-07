@@ -3,6 +3,8 @@
 import collectd
 import time
 
+from blueflood_python.blueflood import BluefloodEndpoint
+
 cfg = {} # has to be global due to `config` function
 
 def config(config):
@@ -26,33 +28,16 @@ def parse_types_file(path):
     return output
 
 
-def flush(data):
-#     """
-#     POST a collection of gauges and counters to Librato Metrics.
-#     """
-    pass
-#     headers = {
-#         'Content-Type': 'application/json',
-#         'User-Agent': config['user_agent'],
-#         'Authorization': 'Basic %s' % config['auth_header']
-#         }
+def flush(data, conf):
+    endpoint = BluefloodEndpoint(conf.get('URL', 'localhost'),
+                                 conf.get('Port', '19000'),
+                                 '', # no retreve port needed
+                                 conf.get('Tenant', 'tenant'))
 
-#     body = json.dumps({ 'gauges' : gauges, 'counters' : counters })
-
-#     url = "%s%s" % (config['api'], config['api_path'])
-#     req = urllib2.Request(url, body, headers)
-#     try:
-#         f = urllib2.urlopen(req, timeout = config['flush_timeout_secs'])
-#         response = f.read()
-#         f.close()
-#     except urllib2.HTTPError as error:
-#         body = error.read()
-#         collectd.warning('%s: Failed to send metrics to Librato: Code: %d. Response: %s' % \
-#                          (plugin_name, error.code, body))
-#     except IOError as error:
-#         collectd.warning('%s: Error when sending metrics Librato (%s)' % \
-#                          (plugin_name, error.reason))
-
+    for metric, series in data.iteritems():
+        time_s = [pt[0] for pt in series]
+        values_s = [pt[1] for pt in series]
+        endpoint.ingest(metric, time_s, values_s)
 
 def queue(name, t, v, data):
     with data['lock']:
@@ -71,7 +56,7 @@ def queue(name, t, v, data):
         data['metrics'] = {}
         data['last_flush_time'] = curr_time
 
-    flush(flushdata)
+    flush(flushdata, data['conf'])
 
 def write(v, data=None):
     types = data['types']

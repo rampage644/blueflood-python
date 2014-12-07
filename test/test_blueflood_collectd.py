@@ -6,6 +6,7 @@ import time
 import threading
 # doing it to make sure collectd module mock will be found
 sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import pytest
 import mock
@@ -87,7 +88,7 @@ def test_queue(flush):
     data = {
         'localhost.load.load.shortterm': values + [(0, 0)]
     }
-    flush.assert_called_once_with(data)
+    flush.assert_called_once_with(data, conf)
 
 @mock.patch('blueflood_collectd.blueflood_plugin.collectd.register_write')
 def test_init(register_write):
@@ -101,3 +102,17 @@ def test_init(register_write):
     assert 'last_flush_time' and data['last_flush_time'] >= 0
     assert 'metrics' in data and isinstance(data['metrics'], dict)
     assert 'types' in data and isinstance(data['types'], dict)
+
+@mock.patch('blueflood_python.blueflood.BluefloodEndpoint.ingest')
+def test_flush(ingest):
+    values = [(1417702296.6129851, 0.1),
+          (1417702297.6129851, 0.1),
+          (1417702298.6129851, 0.1),
+          (1417702299.6129851, 0.1)]
+    data = {
+        'localhost.load.load.shortterm': values,
+    }
+    blueflood_collectd.blueflood_plugin.flush(data, {})
+    ingest.assert_called_once_with('localhost.load.load.shortterm',
+        [1417702296.6129851, 1417702297.6129851, 1417702298.6129851, 1417702299.6129851],
+        [0.1] * 4)
