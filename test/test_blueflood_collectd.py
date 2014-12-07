@@ -6,6 +6,7 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 import pytest
+import mock
 import collectd
 import blueflood_collectd.blueflood_plugin
 
@@ -43,6 +44,24 @@ def test_write():
     types = blueflood_collectd.blueflood_plugin.parse_types_file(path)
     data = {}
     data['types'] = types
+    # mocking collectd imported queue function
+    blueflood_collectd.blueflood_plugin.queue = mock.MagicMock()
+
     vl = collectd.Values(type='load',plugin='load',host='localhost',time=1417702296.6129851,interval=10.0,values=[0.1, 0.18, 0.23])
     blueflood_collectd.blueflood_plugin.write(vl, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.shortterm', 1417702296.6129851, 0.1, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.midterm', 1417702296.6129851, 0.18, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.longterm', 1417702296.6129851, 0.23, data)
+
+    vl = collectd.Values(type='if_octets',plugin='interface',plugin_instance='enp0s25',host='localhost',time=1417945871.3524115,interval=10.0,values=[0, 0])
+    blueflood_collectd.blueflood_plugin.write(vl, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.interface.enp0s25.if_octets.rx', 1417945871.3524115, 0, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.interface.enp0s25.if_octets.tx', 1417945871.3524115, 0, data)
+    
+    vl = collectd.Values(type='memory',type_instance='buffered',plugin='memory',host='localhost',time=1417945871.3516226,interval=10.0,values=[76820480.0])
+    blueflood_collectd.blueflood_plugin.write(vl, data)
+    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.memory.memory.buffered.value', 1417945871.3516226, 76820480.0, data)
+
+def test_queue():
+    assert False
 

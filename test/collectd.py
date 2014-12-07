@@ -13,7 +13,7 @@ class Config(object):
         self.values = values
 
 class Values(object):
-    def __init__(self, host, plugin, plugin_instance, type, type_instance, time, values):
+    def __init__(self, host='', plugin='', plugin_instance='', type='', type_instance='', time=0, values=[], interval=0):
         self.host = host
         self.plugin = plugin
         self.plugin_instance = plugin_instance
@@ -21,6 +21,7 @@ class Values(object):
         self.type = type
         self.type_instance = type_instance
         self.values = values
+        self.interval = interval
 
 
 def register_write(func):

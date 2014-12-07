@@ -3,9 +3,12 @@
 import collectd
 import time
 
+cfg = {} # has to be global due to `config` function
+
 def write(vl, data=None):
     # return 0
-    print vl.plugin_instance, vl.type_instance
+    print vl
+    # print vl.plugin_instance, vl.type_instance
     # endpoint.ingest('{}.{}'.format(vl.plugin, vl.type), [int(vl.time)] * len(vl.values), list(vl.values), 60 * 60 * 24)
 
 def config(config):
@@ -64,7 +67,7 @@ def parse_types_file(path):
 #                          (plugin_name, error.reason))
 
 
-def queue(name, time, value, data):
+def queue(name, time, value):
     pass
     # # Updating shared data structures
     # #
@@ -93,7 +96,8 @@ def queue(name, time, value, data):
     # flush(data)
 
 def write(v, data=None):
-    types, cfg = data['types'], data['conf']
+    global cfg
+    types = data['types']
 
     if v.type not in types:
         collectd.warning('%s: do not know how to handle type %s. ' \
@@ -114,11 +118,12 @@ def write(v, data=None):
         name.append(v.plugin)
         if v.plugin_instance:
             name.append(v.plugin_instance)
+        name.append(v.type)
         if v.type_instance:
             name.append(v.type_instance)
         name.append(ds[0]) # that should describe value of particular type
 
-        queue('.'.join(name), vl.time, vl.values[index], data)
+        queue('.'.join(name), v.time, v.values[index], data)
 
 # def librato_init():
 #     import threading
