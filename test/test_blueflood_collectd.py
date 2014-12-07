@@ -2,6 +2,8 @@
 
 import os
 import sys
+import time
+import threading
 # doing it to make sure collectd module mock will be found
 sys.path.append(os.path.dirname(__file__))
 
@@ -39,29 +41,50 @@ def test_parse_config():
     assert 'Password' in cfg and cfg['Password'] == 'password'
     assert 'Tenant' in cfg and cfg['Tenant'] == 'tenant'
 
-def test_write():
+@mock.patch('blueflood_collectd.blueflood_plugin.queue')
+def test_write(queue):
     path = os.path.join(os.path.dirname(__file__), 'types.db')
     types = blueflood_collectd.blueflood_plugin.parse_types_file(path)
     data = {}
     data['types'] = types
     # mocking collectd imported queue function
-    blueflood_collectd.blueflood_plugin.queue = mock.MagicMock()
 
     vl = collectd.Values(type='load',plugin='load',host='localhost',time=1417702296.6129851,interval=10.0,values=[0.1, 0.18, 0.23])
     blueflood_collectd.blueflood_plugin.write(vl, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.shortterm', 1417702296.6129851, 0.1, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.midterm', 1417702296.6129851, 0.18, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.load.load.longterm', 1417702296.6129851, 0.23, data)
+    queue.assert_any_call('localhost.load.load.shortterm', 1417702296.6129851, 0.1, data)
+    queue.assert_any_call('localhost.load.load.midterm', 1417702296.6129851, 0.18, data)
+    queue.assert_any_call('localhost.load.load.longterm', 1417702296.6129851, 0.23, data)
 
     vl = collectd.Values(type='if_octets',plugin='interface',plugin_instance='enp0s25',host='localhost',time=1417945871.3524115,interval=10.0,values=[0, 0])
     blueflood_collectd.blueflood_plugin.write(vl, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.interface.enp0s25.if_octets.rx', 1417945871.3524115, 0, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.interface.enp0s25.if_octets.tx', 1417945871.3524115, 0, data)
+    queue.assert_any_call('localhost.interface.enp0s25.if_octets.rx', 1417945871.3524115, 0, data)
+    queue.assert_any_call('localhost.interface.enp0s25.if_octets.tx', 1417945871.3524115, 0, data)
     
     vl = collectd.Values(type='memory',type_instance='buffered',plugin='memory',host='localhost',time=1417945871.3516226,interval=10.0,values=[76820480.0])
     blueflood_collectd.blueflood_plugin.write(vl, data)
-    blueflood_collectd.blueflood_plugin.queue.assert_any_call('localhost.memory.memory.buffered.value', 1417945871.3516226, 76820480.0, data)
+    queue.assert_any_call('localhost.memory.memory.buffered.value', 1417945871.3516226, 76820480.0, data)
 
-def test_queue():
-    assert False
+@mock.patch('blueflood_collectd.blueflood_plugin.flush')
+def test_queue(flush):
+    queue = blueflood_collectd.blueflood_plugin.queue
 
+    data = {}
+    data['metrics'] = {}
+    conf = {'CacheTimeout': 0.2}
+    data['conf'] = conf
+    data['last_flush_time'] = time.time()
+    data['lock'] = threading.Lock()
+
+    values = [(1417702296.6129851, 0.1),
+              (1417702297.6129851, 0.1),
+              (1417702298.6129851, 0.1),
+              (1417702299.6129851, 0.1)]
+    for v in values:
+        queue('localhost.load.load.shortterm', v[0], v[1], data)
+    assert not flush.called
+    time.sleep(0.3)
+    queue('localhost.load.load.shortterm', 0, 0, data)
+    data = {
+        'localhost.load.load.shortterm': values + [(0, 0)]
+    }
+    flush.assert_called_once_with(data)

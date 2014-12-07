@@ -39,11 +39,11 @@ def parse_types_file(path):
 
 
 
-# def flush(data):
+def flush(data):
 #     """
 #     POST a collection of gauges and counters to Librato Metrics.
 #     """
-
+    pass
 #     headers = {
 #         'Content-Type': 'application/json',
 #         'User-Agent': config['user_agent'],
@@ -67,36 +67,28 @@ def parse_types_file(path):
 #                          (plugin_name, error.reason))
 
 
-def queue(name, time, value):
-    pass
-    # # Updating shared data structures
-    # #
-    # data['lock'].acquire()
+def queue(name, t, v, data):
+    # Updating shared data structures
+    #
+    with data['lock']:
+        series = data['metrics'].get(name, [])
+        series.append((t, v))
+        data['metrics'][name] = series
 
-    # data['gauges'].extend(gauges)
-    # data['counters'].extend(counters)
+        curr_time = time.time()
+        last_time = data['last_flush_time']
+        timeout = data['conf'].get('CacheTimeout', 60)
+        if curr_time - last_time < timeout:
+            return
+        
 
-    # curr_time = get_time()
-    # last_flush = curr_time - data['last_flush_time']
-    # length = len(data['gauges']) + len(data['counters'])
+        flushdata = data['metrics']
+        data['metrics'] = {}
+        data['last_flush_time'] = curr_time
 
-    # if (last_flush < config['flush_interval_secs'] and \
-    #        length < config['flush_max_measurements']) or \
-    #        length == 0:
-    #     data['lock'].release()
-    #     return
-
-    # flush_gauges = data['gauges']
-    # flush_counters = data['counters']
-    # data['gauges'] = []
-    # data['counters'] = []
-    # data['last_flush_time'] = curr_time
-    # data['lock'].release()
-
-    # flush(data)
+    flush(flushdata)
 
 def write(v, data=None):
-    global cfg
     types = data['types']
 
     if v.type not in types:
