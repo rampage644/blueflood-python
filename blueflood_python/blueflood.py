@@ -16,7 +16,8 @@ def _get_metrics_query_url(host, port, scheme, tenantId,
         + '?from=' + str(start) + '&to=' + str(end) + '&points=' + str(points)
 
 
-# TODO do something with schema (parametrize, include in host)
+# TODO specify URL directly (without host/port/schema split): ingestion and retrieval
+# TODO ingest multiple metric names at once
 class BluefloodEndpoint():
 
     def __init__(self, host='localhost', ingest_port='19000', retrieve_port='20000', tenant='tenant-id', schema='http'):
