@@ -129,3 +129,21 @@ def test_plugin_init(register_write, error):
         blueflood_collectd.blueflood_plugin.init()
         error.assert_called_with('blueflood_plugin: No Tenant key is present in config file')
         assert not register_write.called
+
+@mock.patch('blueflood_collectd.blueflood_plugin.queue')
+@mock.patch('blueflood_collectd.blueflood_plugin.collectd.warning')
+def test_rejecting_write(warning, queue):
+    data = {}
+    data['types'] = {} # no known types
+    vl = collectd.Values(type='load',plugin='load',host='localhost',time=1417702296.6129851,interval=10.0,values=[0.1, 0.18, 0.23])
+    blueflood_collectd.blueflood_plugin.write(vl, data)
+    assert not queue.called
+    warning.assert_called_once_with('blueflood_plugin: do not know how to handle type load. do you have all your types.db files configured?')
+    
+    path = os.path.join(os.path.dirname(__file__), 'types.db')
+    types = blueflood_collectd.blueflood_plugin.parse_types_file(path)
+    data['types'] = types
+    vl = collectd.Values(type='load',plugin='load',host='localhost',time=1417702296.6129851,interval=10.0,values=[0.1, 0.18, 0.23, 0.0])
+    blueflood_collectd.blueflood_plugin.write(vl, data)
+    warning.assert_called_with('blueflood_plugin: differing number of values for type load')
+    assert not queue.called

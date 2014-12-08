@@ -6,6 +6,7 @@ import time
 from blueflood_python.blueflood import BluefloodEndpoint
 
 cfg = {} # has to be global due to `config` function
+plugin_name = 'blueflood_plugin'
 
 def config(config):
     global cfg
@@ -62,16 +63,16 @@ def write(v, data=None):
     types = data['types']
 
     if v.type not in types:
-        collectd.warning('%s: do not know how to handle type %s. ' \
-                         'do you have all your types.db files configured?' % \
-                         (plugin_name, v.type))
+        collectd.warning('{}: do not know how to handle type {}. ' \
+                         'do you have all your types.db files configured?'.\
+                         format(plugin_name, v.type))
         return
 
     v_types = types[v.type]
 
     if len(v_types) != len(v.values):
-        collectd.warning('%s: differing number of values for type %s' % \
-                         (plugin_name, v.type))
+        collectd.warning('{}: differing number of values for type {}'.\
+                         format(plugin_name, v.type))
         return
 
     for index, ds in enumerate(v_types):
@@ -99,7 +100,7 @@ def init():
 
     for key in ('URL', 'Tenant'):
         if key not in cfg:
-            collectd.error('{}: No {} key is present in config file'.format('blueflood_plugin', key))
+            collectd.error('{}: No {} key is present in config file'.format(plugin_name, key))
             return
 
     # can't register write earlier cause of threading import constraints
