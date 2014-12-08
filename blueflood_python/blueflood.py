@@ -16,15 +16,15 @@ def _get_metrics_query_url(host, port, scheme, tenantId,
         + '?from=' + str(start) + '&to=' + str(end) + '&points=' + str(points)
 
 
-# TODO add retrieve method
 # TODO do something with schema (parametrize, include in host)
 class BluefloodEndpoint():
 
-    def __init__(self, host='localhost', ingest_port='19000', retrieve_port='20000', tenant='tenant-id'):
+    def __init__(self, host='localhost', ingest_port='19000', retrieve_port='20000', tenant='tenant-id', schema='http'):
         self.ingest_port = ingest_port
         self.retrieve_port = retrieve_port
         self.host = host
         self.tenant = tenant
+        self.schema = schema
 
     def ingest(self, metric_name, time, value, ttl):
         if not isinstance(time, list):
@@ -43,12 +43,12 @@ class BluefloodEndpoint():
         } for t,v in zip(time, value)]
         # print (_get_metrics_url(self.host, self.ingest_port, 'http', 'tenant-id'))
         # print (json.dumps(data))
-        r = urllib2.urlopen(_get_metrics_url(self.host, self.ingest_port, 'http', self.tenant),
+        r = urllib2.urlopen(_get_metrics_url(self.host, self.ingest_port, self.schema, self.tenant),
                             data=json.dumps(data))
         return r.read()
 
     def retrieve(self, metric_name, start, to, points):
-        r = urllib2.urlopen(_get_metrics_query_url(self.host, self.retrieve_port, 'http', self.tenant,
+        r = urllib2.urlopen(_get_metrics_query_url(self.host, self.retrieve_port, self.schema, self.tenant,
                                                    metric_name, start, to, points))
         response = r.read()
         return json.loads(response)
