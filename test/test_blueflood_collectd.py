@@ -94,14 +94,14 @@ def test_queue(flush):
 def test_init(register_write):
     # testing all needed dict keys
     path = os.path.join(os.path.dirname(__file__), 'types.db')
-    blueflood_collectd.blueflood_plugin.cfg = {'TypesDB': path}
-    blueflood_collectd.blueflood_plugin.init()
-    data = register_write.call_args[0][1]
-    assert 'lock' in data
-    assert 'conf' in data and isinstance(data['conf'], dict)
-    assert 'last_flush_time' and data['last_flush_time'] >= 0
-    assert 'metrics' in data and isinstance(data['metrics'], dict)
-    assert 'types' in data and isinstance(data['types'], dict)
+    with mock.patch.dict(blueflood_collectd.blueflood_plugin.cfg, {'TypesDB': path, 'URL': '', 'Tenant': ''}):
+        blueflood_collectd.blueflood_plugin.init()
+        data = register_write.call_args[0][1]
+        assert 'lock' in data
+        assert 'conf' in data and isinstance(data['conf'], dict)
+        assert 'last_flush_time' and data['last_flush_time'] >= 0
+        assert 'metrics' in data and isinstance(data['metrics'], dict)
+        assert 'types' in data and isinstance(data['types'], dict)
 
 @mock.patch('blueflood_python.blueflood.BluefloodEndpoint.ingest')
 def test_flush(ingest):
@@ -115,4 +115,17 @@ def test_flush(ingest):
     blueflood_collectd.blueflood_plugin.flush(data, {})
     ingest.assert_called_once_with('localhost.load.load.shortterm',
         [1417702296.6129851, 1417702297.6129851, 1417702298.6129851, 1417702299.6129851],
-        [0.1] * 4)
+        [0.1] * 4, 86400)
+
+@mock.patch('blueflood_collectd.blueflood_plugin.collectd.error')
+@mock.patch('blueflood_collectd.blueflood_plugin.collectd.register_write')
+def test_plugin_init(register_write, error):
+    path = os.path.join(os.path.dirname(__file__), 'types.db')
+    with mock.patch.dict(blueflood_collectd.blueflood_plugin.cfg, {'TypesDB':path}, clear=True):
+        cfg = blueflood_collectd.blueflood_plugin.cfg
+        blueflood_collectd.blueflood_plugin.init()
+        error.assert_called_once_with('blueflood_plugin: No URL key is present in config file')
+        cfg['URL'] = 'localhost'
+        blueflood_collectd.blueflood_plugin.init()
+        error.assert_called_with('blueflood_plugin: No Tenant key is present in config file')
+        assert not register_write.called

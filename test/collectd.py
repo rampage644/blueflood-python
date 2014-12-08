@@ -32,3 +32,9 @@ def register_config(func):
 
 def register_init(func):
     pass
+
+def warning(info):
+    pass
+
+def error(info):
+    pass

@@ -97,6 +97,11 @@ def init():
         'metrics': {}
     }
 
+    for key in ('URL', 'Tenant'):
+        if key not in cfg:
+            collectd.error('{}: No {} key is present in config file'.format('blueflood_plugin', key))
+            return
+
     # can't register write earlier cause of threading import constraints
     collectd.register_write(write, data)
 
