@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import threading
+import urllib2
 # doing it to make sure collectd module mock will be found
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -147,3 +148,23 @@ def test_rejecting_write(warning, queue):
     blueflood_collectd.blueflood_plugin.write(vl, data)
     warning.assert_called_with('blueflood_plugin: differing number of values for type load')
     assert not queue.called
+
+@mock.patch('blueflood_python.blueflood.BluefloodEndpoint.ingest')
+def test_unsuccesfull_flush(ingest):
+    data = {'metric': [(0,0), (1,1)]}
+    
+    try:
+        ingest.side_effect = urllib2.URLError('[Errno 111] Connection refused')
+        blueflood_collectd.blueflood_plugin.flush(data, {})
+    except urllib2.URLError:
+        pass
+    else:
+        assert False, 'Should have raised URLError'
+    
+    try:
+        ingest.side_effect = urllib2.HTTPError('localhost', 404, 'Not Found', {}, None)
+        blueflood_collectd.blueflood_plugin.flush(data, {})
+    except urllib2.HTTPError:
+        pass
+    else:
+        assert False, 'Should have raised HTTPError'
