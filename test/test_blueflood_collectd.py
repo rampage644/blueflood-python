@@ -104,8 +104,9 @@ def test_init(register_write):
         assert 'metrics' in data and isinstance(data['metrics'], dict)
         assert 'types' in data and isinstance(data['types'], dict)
 
+@mock.patch('blueflood_python.blueflood.BluefloodEndpoint.commit')
 @mock.patch('blueflood_python.blueflood.BluefloodEndpoint.ingest')
-def test_flush(ingest):
+def test_flush(ingest, commit):
     values = [(1417702296.6129851, 0.1),
           (1417702297.6129851, 0.1),
           (1417702298.6129851, 0.1),
@@ -114,9 +115,18 @@ def test_flush(ingest):
         'localhost.load.load.shortterm': values,
     }
     blueflood_collectd.blueflood_plugin.flush(data, {})
+    data = {
+        'localhost.load.load.midterm': values,
+    }
     ingest.assert_called_once_with('localhost.load.load.shortterm',
         [1417702296.6129851, 1417702297.6129851, 1417702298.6129851, 1417702299.6129851],
         [0.1] * 4, 86400)
+    blueflood_collectd.blueflood_plugin.flush(data, {})
+    ingest.assert_called_with('localhost.load.load.midterm',
+            [1417702296.6129851, 1417702297.6129851, 1417702298.6129851, 1417702299.6129851],
+            [0.1] * 4, 86400)
+    assert commit.called
+
 
 @mock.patch('blueflood_collectd.blueflood_plugin.collectd.error')
 @mock.patch('blueflood_collectd.blueflood_plugin.collectd.register_write')

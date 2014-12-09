@@ -39,6 +39,8 @@ def flush(data, conf):
         time_s = [pt[0] for pt in series]
         values_s = [pt[1] for pt in series]
         endpoint.ingest(metric, time_s, values_s, conf.get('TTL', 60 * 60 * 24))
+    if len(data.iteritems()):
+        endpoint.commit()
 
 def queue(name, t, v, data):
     with data['lock']:
