@@ -30,16 +30,14 @@ def parse_types_file(path):
 
 
 def flush(data, conf):
-    endpoint = BluefloodEndpoint(conf.get('URL', 'localhost'),
-                                 conf.get('Port', '19000'),
-                                 '', # no retreve port needed
+    endpoint = BluefloodEndpoint(conf.get('URL', 'http://localhost:19000'),
                                  conf.get('Tenant', 'tenant'))
 
     for metric, series in data.iteritems():
         time_s = [pt[0] for pt in series]
         values_s = [pt[1] for pt in series]
         endpoint.ingest(metric, time_s, values_s, conf.get('TTL', 60 * 60 * 24))
-    if len(data.iteritems()):
+    if len(list(data.iteritems())):
         endpoint.commit()
 
 def queue(name, t, v, data):
