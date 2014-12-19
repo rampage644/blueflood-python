@@ -5,13 +5,13 @@ import urlparse
 import json
 
 
-def _get_metrics_url(host, port, scheme, tenantId):
-    return scheme + '://' + host + ':' + str(port) + '/v2.0/'\
+def _get_metrics_url(url, tenantId):
+    return url + '/v2.0/'\
         + tenantId + '/ingest'
 
-def _get_metrics_query_url(host, port, scheme, tenantId,
+def _get_metrics_query_url(url, tenantId,
                            metricName, start, end, points):
-    return scheme + '://' + host + ':' + port + '/v2.0/' + tenantId\
+    return url + '/v2.0/' + tenantId\
         + '/views/' + metricName\
         + '?from=' + str(start) + '&to=' + str(end) + '&points=' + str(points)
 
@@ -20,13 +20,12 @@ def _get_metrics_query_url(host, port, scheme, tenantId,
 # TODO switch resolution/points on retrieve
 class BluefloodEndpoint():
 
-    def __init__(self, host='localhost', ingest_port='19000', retrieve_port='20000', tenant='tenant-id', schema='http'):
-        self.ingest_port = ingest_port
-        self.retrieve_port = retrieve_port
-        self.host = host
+    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id'):
+        self.ingest_url = ingest_url
+        self.retrieve_url = retrieve_url
         self.tenant = tenant
-        self.schema = schema
         self._json_buffer = []
+        self.headers = {}
 
     def ingest(self, metric_name, time, value, ttl):
         if not isinstance(time, list):
@@ -46,14 +45,16 @@ class BluefloodEndpoint():
         self._json_buffer.extend(data)
 
     def commit(self):
-        r = urllib2.urlopen(_get_metrics_url(self.host, self.ingest_port, self.schema, self.tenant),
-                            data=json.dumps(self._json_buffer))
+        req = urllib2.Request(_get_metrics_url(self.ingest_url, self.tenant),
+            json.dumps(self._json_buffer), self.headers)
+        r = urllib2.urlopen(req)
         self._json_buffer = []
         return r.read()
 
 
     def retrieve(self, metric_name, start, to, points):
-        r = urllib2.urlopen(_get_metrics_query_url(self.host, self.retrieve_port, self.schema, self.tenant,
-                                                   metric_name, start, to, points))
+        req = urllib2.Request(_get_metrics_query_url(self.retrieve_url, self.tenant,
+            metric_name, start, to, points), None, self.headers)
+        r = urllib2.urlopen(req)
         response = r.read()
         return json.loads(response)
