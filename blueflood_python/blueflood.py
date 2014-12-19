@@ -15,8 +15,13 @@ def _get_metrics_query_url(url, tenantId,
         + '/views/' + metricName\
         + '?from=' + str(start) + '&to=' + str(end) + '&points=' + str(points)
 
+def _get_metrics_query_url_resolution(url, tenantId,
+                           metricName, start, end, resolution='FULL'):
+    return url + '/v2.0/' + tenantId\
+        + '/views/' + metricName\
+        + '?from=' + str(start) + '&to=' + str(end) + '&resolution=' + resolution
 
-# TODO specify URL directly (without host/port/schema split): ingestion and retrieval
+
 # TODO switch resolution/points on retrieve
 class BluefloodEndpoint():
 
@@ -52,9 +57,18 @@ class BluefloodEndpoint():
         return r.read()
 
 
-    def retrieve(self, metric_name, start, to, points):
+    def retrieve_points(self, metric_name, start, to, points):
         req = urllib2.Request(_get_metrics_query_url(self.retrieve_url, self.tenant,
             metric_name, start, to, points), None, self.headers)
+        r = urllib2.urlopen(req)
+        response = r.read()
+        return json.loads(response)
+
+    retrieve = retrieve_points
+
+    def retrieve_resolution(self, metric_name, start, to, resolution='FULL'):
+        req = urllib2.Request(_get_metrics_query_url_resolution(self.retrieve_url, self.tenant,
+            metric_name, start, to, resolution), None, self.headers)
         r = urllib2.urlopen(req)
         response = r.read()
         return json.loads(response)
